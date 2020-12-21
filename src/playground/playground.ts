@@ -4,6 +4,8 @@ import '../extensions';
 import logger from '../utilities/logger';
 import '../global-error-handlers';
 
+import { Prisma, PrismaClient } from '@prisma/client';
+
 // import * as pugPlay from './playground-pug';
 // import * as rendererPlay from './playground-renderer-functions';
 // import * as schedulerPlay from './playground-scheduler-functions';
@@ -18,11 +20,34 @@ if (configurations.email.enabled) {
 
 import { sync } from '../database';
 
+async function main(prisma: PrismaClient<Prisma.PrismaClientOptions, never>): Promise<void> {
+    const users = await prisma.users.findMany({
+        where: {
+            university: {
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                university_id: 4,
+            }
+        },
+        include: {
+            course: true
+        },
+    });
+    console.log(users);
+}
 
 (async (): Promise<void> => {
     try {
         await sync();
         logger.info('Playground start');
+        const prisma = new PrismaClient();
+
+        main(prisma)
+          .catch(e => {
+            throw e;
+          })
+          .finally(async () => {
+            await prisma.$disconnect();
+          });
         logger.info('Playground done');
     } catch (e) {
         logger.error('Could not start up', e);

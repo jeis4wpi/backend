@@ -1,0 +1,563 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model course {
+  course_id            Int                   @id @default(autoincrement())
+  course_active        Boolean               @default(true)
+  curriculum_id        Int?
+  user_id              Int
+  university_id        Int
+  course_name          String
+  course_textbooks     String
+  course_code          String                @unique
+  course_start         DateTime
+  course_end           DateTime
+  course_section_code  String
+  course_semester_code String
+  created_at           DateTime
+  updated_at           DateTime
+  curriculum           curriculum?           @relation(fields: [curriculum_id], references: [curriculum_id])
+  users                users                 @relation(fields: [user_id], references: [user_id])
+  course_unit_content  course_unit_content[]
+  student_enrollment   student_enrollment[]
+}
+
+model course_question_assessment_info {
+  course_question_assessment_info_id                       Int                                  @id @default(autoincrement())
+  course_topic_question_id                                 Int
+  course_question_assessment_info_random_seed_set          Int[]
+  course_question_assessment_info_additional_problem_paths String[]
+  course_question_assessment_info_active                   Boolean                              @default(true)
+  updated_at                                               DateTime
+  created_at                                               DateTime
+  curriculum_question_assessment_info_id                   Int?
+  course_topic_question                                    course_topic_question                @relation(fields: [course_topic_question_id], references: [course_topic_question_id])
+  curriculum_question_assessment_info                      curriculum_question_assessment_info? @relation(fields: [curriculum_question_assessment_info_id], references: [curriculum_question_assessment_info_id])
+}
+
+model course_topic_content {
+  course_topic_content_id             Int                       @id @default(autoincrement())
+  curriculum_topic_content_id         Int?
+  course_unit_content_id              Int
+  topic_type_id                       Int
+  course_topic_content_order          Int
+  course_topic_content_name           String
+  course_topic_content_active         Boolean                   @default(true)
+  course_topic_content_start_date     DateTime
+  course_topic_content_end_date       DateTime
+  course_topic_content_dead_date      DateTime
+  course_topic_content_partial_extend Boolean
+  created_at                          DateTime
+  updated_at                          DateTime
+  course_unit_content                 course_unit_content       @relation(fields: [course_unit_content_id], references: [course_unit_content_id])
+  curriculum_topic_content            curriculum_topic_content? @relation(fields: [curriculum_topic_content_id], references: [curriculum_topic_content_id])
+  topic_type                          topic_type                @relation(fields: [topic_type_id], references: [topic_type_id])
+  course_topic_question               course_topic_question[]
+  student_topic_override              student_topic_override[]
+  topic_assessment_info               topic_assessment_info[]
+
+  @@unique([course_unit_content_id, course_topic_content_name], name: "course_topic_content--unit_id-name")
+  @@unique([course_unit_content_id, course_topic_content_order], name: "course_topic_content--unit_id-order")
+}
+
+model course_topic_question {
+  course_topic_question_id                       Int                               @id @default(autoincrement())
+  course_topic_content_id                        Int
+  course_topic_question_problem_number           Int
+  course_topic_question_webwork_question_ww_path String
+  course_topic_question_weight                   Int
+  course_topic_question_max_attempts             Int
+  course_topic_question_hidden                   Boolean
+  course_topic_question_active                   Boolean                           @default(true)
+  course_topic_question_optional                 Boolean
+  curriculum_topic_question_id                   Int?
+  created_at                                     DateTime
+  updated_at                                     DateTime
+  course_topic_content                           course_topic_content              @relation(fields: [course_topic_content_id], references: [course_topic_content_id])
+  curriculum_topic_question                      curriculum_topic_question?        @relation(fields: [curriculum_topic_question_id], references: [curriculum_topic_question_id])
+  course_question_assessment_info                course_question_assessment_info[]
+  student_grade                                  student_grade[]
+  student_topic_question_override                student_topic_question_override[]
+  student_workbook                               student_workbook[]
+
+  @@unique([course_topic_content_id, course_topic_question_problem_number], name: "course_topic_question--problem_number-topic_id")
+}
+
+model course_unit_content {
+  course_unit_content_id     Int                      @id @default(autoincrement())
+  course_id                  Int
+  course_unit_content_name   String
+  course_unit_content_active Boolean                  @default(true)
+  course_unit_content_order  Int
+  curriculum_unit_content_id Int?
+  created_at                 DateTime
+  updated_at                 DateTime
+  course                     course                   @relation(fields: [course_id], references: [course_id])
+  curriculum_unit_content    curriculum_unit_content? @relation(fields: [curriculum_unit_content_id], references: [curriculum_unit_content_id])
+  course_topic_content       course_topic_content[]
+
+  @@unique([course_id, course_unit_content_order], name: "course_unit_content--course_id-order")
+  @@unique([course_id, course_unit_content_name], name: "course_unit_content--name-course_id")
+}
+
+model curriculum {
+  curriculum_id                    Int                                @id @default(autoincrement())
+  university_id                    Int
+  curriculum_name                  String
+  curriculum_textbooks             String                             @default("")
+  curriculum_subject               String
+  curriculum_comment               String
+  curriculum_active                Boolean                            @default(true)
+  curriculum_public                Boolean
+  created_at                       DateTime
+  updated_at                       DateTime
+  university                       university                         @relation(fields: [university_id], references: [university_id])
+  course                           course[]
+  curriculum_unit_content          curriculum_unit_content[]
+  university_curriculum_permission university_curriculum_permission[]
+
+  @@unique([university_id, curriculum_name], name: "curriculum--university_id-name")
+}
+
+model curriculum_question_assessment_info {
+  curriculum_question_assessment_info_id                       Int                               @id @default(autoincrement())
+  curriculum_topic_question_id                                 Int
+  curriculum_question_assessment_info_random_seed_set          Int[]
+  curriculum_question_assessment_info_additional_problem_paths String[]
+  curriculum_question_assessment_info_active                   Boolean                           @default(true)
+  updated_at                                                   DateTime
+  created_at                                                   DateTime
+  curriculum_topic_question                                    curriculum_topic_question         @relation(fields: [curriculum_topic_question_id], references: [curriculum_topic_question_id])
+  course_question_assessment_info                              course_question_assessment_info[]
+}
+
+model curriculum_topic_assessment_info {
+  curriculum_topic_assessment_info_id                             Int                      @id @default(autoincrement())
+  curriculum_topic_content_id                                     Int
+  curriculum_topic_assessment_info_duration                       Int                      @default(0)
+  curriculum_topic_assessment_info_hard_cutoff                    Boolean                  @default(false)
+  curriculum_topic_assessment_info_max_graded_attempts_per_versio Int                      @default(1)
+  curriculum_topic_assessment_info_max_versions                   Int                      @default(0)
+  curriculum_topic_assessment_info_version_delay                  Int                      @default(0)
+  curriculum_topic_assessment_info_hide_hints                     Boolean                  @default(false)
+  curriculum_topic_assessment_info_show_itemized_results          Boolean                  @default(false)
+  curriculum_topic_assessment_info_show_total_grade_immediately   Boolean                  @default(false)
+  curriculum_topic_assessment_info_hide_problems_after_finish     Boolean                  @default(true)
+  curriculum_topic_assessment_info_randomize_order                Boolean                  @default(false)
+  curriculum_topic_assessment_info_active                         Boolean                  @default(true)
+  updated_at                                                      DateTime
+  created_at                                                      DateTime
+  curriculum_topic_content                                        curriculum_topic_content @relation(fields: [curriculum_topic_content_id], references: [curriculum_topic_content_id])
+  topic_assessment_info                                           topic_assessment_info[]
+}
+
+model curriculum_topic_content {
+  curriculum_topic_content_id      Int                                @id @default(autoincrement())
+  curriculum_unit_content_id       Int
+  topic_type_id                    Int
+  curriculum_topic_content_name    String
+  curriculum_topic_content_active  Boolean                            @default(true)
+  curriculum_topic_content_order   Int
+  created_at                       DateTime
+  updated_at                       DateTime
+  curriculum_unit_content          curriculum_unit_content            @relation(fields: [curriculum_unit_content_id], references: [curriculum_unit_content_id])
+  course_topic_content             course_topic_content[]
+  curriculum_topic_assessment_info curriculum_topic_assessment_info[]
+  curriculum_topic_question        curriculum_topic_question[]
+
+  @@unique([curriculum_unit_content_id, curriculum_topic_content_name], name: "curriculum_topic_content--unit_id-name")
+  @@unique([curriculum_unit_content_id, curriculum_topic_content_order], name: "curriculum_topic_content--unit_id-order")
+}
+
+model curriculum_topic_question {
+  curriculum_topic_question_id                       Int                                   @id @default(autoincrement())
+  curriculum_topic_content_id                        Int
+  curriculum_topic_question_problem_number           Int
+  curriculum_topic_question_webwork_question_ww_path String
+  curriculum_topic_question_weight                   Int                                   @default(1)
+  curriculum_topic_question_max_attempts             Int                                   @default(-1)
+  curriculum_topic_question_hidden                   Boolean                               @default(false)
+  curriculum_topic_question_active                   Boolean                               @default(true)
+  curriculum_topic_question_optional                 Boolean                               @default(false)
+  created_at                                         DateTime
+  updated_at                                         DateTime
+  curriculum_topic_content                           curriculum_topic_content              @relation(fields: [curriculum_topic_content_id], references: [curriculum_topic_content_id])
+  course_topic_question                              course_topic_question[]
+  curriculum_question_assessment_info                curriculum_question_assessment_info[]
+
+  @@unique([curriculum_topic_question_problem_number, curriculum_topic_content_id], name: "curriculum_topic_question--problem_number-topic_id")
+}
+
+model curriculum_unit_content {
+  curriculum_unit_content_id     Int                        @id @default(autoincrement())
+  curriculum_id                  Int
+  curriculum_unit_content_order  Int
+  curriculum_unit_content_name   String
+  curriculum_unit_content_active Boolean                    @default(true)
+  created_at                     DateTime
+  updated_at                     DateTime
+  curriculum                     curriculum                 @relation(fields: [curriculum_id], references: [curriculum_id])
+  course_unit_content            course_unit_content[]
+  curriculum_topic_content       curriculum_topic_content[]
+
+  @@unique([curriculum_id, curriculum_unit_content_name], name: "curriculum_unit_content--name-curriculum_id")
+  @@unique([curriculum_id, curriculum_unit_content_order], name: "curriculum_unit_content--order-curriculum_id")
+}
+
+model permission {
+  permission_id          Int      @id @default(autoincrement())
+  permission_active      Boolean  @default(true)
+  permission_role_name   String   @unique
+  permission_description String   @default("")
+  permission_name        String   @default("")
+  created_at             DateTime
+  updated_at             DateTime
+  users                  users[]
+}
+
+model problem_attachment {
+  problem_attachment_id                     Int                                         @id @default(autoincrement())
+  problem_attachment_cloud_filename         String
+  problem_attachment_user_local_filename    String
+  problem_attachment_active                 Boolean                                     @default(true)
+  updated_at                                DateTime
+  created_at                                DateTime
+  student_grade_instance_problem_attachment student_grade_instance_problem_attachment[]
+  student_grade_problem_attachment          student_grade_problem_attachment[]
+  student_workbook_problem_attachment       student_workbook_problem_attachment[]
+}
+
+model SequelizeMeta {
+  name String @id
+}
+
+model session {
+  session_id             Int      @id @default(autoincrement())
+  user_id                Int
+  session_uuid           String
+  session_expires_at     DateTime
+  session_expires_active Boolean  @default(true)
+  created_at             DateTime
+  updated_at             DateTime
+  users                  users    @relation(fields: [user_id], references: [user_id])
+}
+
+model student_enrollment {
+  student_enrollment_id          Int       @id @default(autoincrement())
+  student_enrollment_active      Boolean   @default(true)
+  course_id                      Int
+  user_id                        Int?
+  student_enrollment_enroll_date DateTime  @default(now())
+  student_enrollment_drop_date   DateTime?
+  created_at                     DateTime
+  updated_at                     DateTime
+  course                         course    @relation(fields: [course_id], references: [course_id])
+  users                          users?    @relation(fields: [user_id], references: [user_id])
+
+  @@unique([user_id, course_id], name: "student_enrollment--user_id-course_id")
+}
+
+model student_grade {
+  student_grade_id                              Int                                @id @default(autoincrement())
+  student_grade_active                          Boolean                            @default(true)
+  user_id                                       Int?
+  course_topic_question_id                      Int
+  student_grade_random_seed                     Int                                @default(666)
+  student_grade_best_score                      Float                              @default(0)
+  student_grade_overall_best_score              Float                              @default(0)
+  student_grade_num_attempts                    Int                                @default(0)
+  student_grade_first_attempt                   Float                              @default(0)
+  student_grade_latest_attempt                  Float                              @default(0)
+  student_grade_effective_score                 Float                              @default(0)
+  student_grade_partial_best_score              Float                              @default(0)
+  student_grade_legal_score                     Float                              @default(0)
+  student_grade_locked                          Boolean                            @default(false)
+  created_at                                    DateTime
+  updated_at                                    DateTime
+  student_grade_num_legal_attempts              Int                                @default(0)
+  student_grade_num_extended_attempts           Int                                @default(0)
+  last_influencing_legal_attempt_workbook_id    Int?
+  last_influencing_credited_attempt_workbook_id Int?
+  last_influencing_attempt_workbook_id          Int?
+  student_grade_current_problem_state           Json?
+  course_topic_question                         course_topic_question              @relation(fields: [course_topic_question_id], references: [course_topic_question_id])
+  users                                         users?                             @relation(fields: [user_id], references: [user_id])
+  student_grade_instance                        student_grade_instance[]
+  student_grade_lock_action                     student_grade_lock_action[]
+  student_grade_override                        student_grade_override[]
+  student_grade_problem_attachment              student_grade_problem_attachment[]
+  student_workbook                              student_workbook[]
+
+  @@unique([course_topic_question_id, user_id], name: "student_grade--course_topic_question_id-user_id")
+}
+
+model student_grade_instance {
+  student_grade_instance_id                          Int                                         @id @default(autoincrement())
+  student_grade_id                                   Int
+  user_id                                            Int
+  student_topic_assessment_info_id                   Int
+  student_grade_instance_random_seed                 Int
+  student_grade_instance_problem_path                String
+  student_grade_instance_problem_number              Int
+  student_grade_instance_score_for_best_version      Float                                       @default(0)
+  student_grade_instance_overall_best_score          Float                                       @default(0)
+  student_grade_instance_active                      Boolean                                     @default(true)
+  student_grade_instance_current_problem_state       Json?
+  student_grade_instance_best_individual_workbook_id Int?
+  student_grade_instance_best_version_workbook_id    Int?
+  updated_at                                         DateTime
+  created_at                                         DateTime
+  student_grade                                      student_grade                               @relation(fields: [student_grade_id], references: [student_grade_id])
+  student_topic_assessment_info                      student_topic_assessment_info               @relation(fields: [student_topic_assessment_info_id], references: [student_topic_assessment_info_id])
+  users                                              users                                       @relation(fields: [user_id], references: [user_id])
+  student_grade_instance_problem_attachment          student_grade_instance_problem_attachment[]
+  student_workbook                                   student_workbook[]
+}
+
+model student_grade_instance_problem_attachment {
+  student_grade_instance_problem_attachment_id     Int                    @id @default(autoincrement())
+  student_grade_instance_id                        Int
+  problem_attachment_id                            Int
+  student_grade_instance_problem_attachment_active Boolean                @default(true)
+  updated_at                                       DateTime
+  created_at                                       DateTime
+  problem_attachment                               problem_attachment     @relation(fields: [problem_attachment_id], references: [problem_attachment_id])
+  student_grade_instance                           student_grade_instance @relation(fields: [student_grade_instance_id], references: [student_grade_instance_id])
+
+  @@unique([student_grade_instance_id, problem_attachment_id], name: "student_grade_instance_problem_attachment_student_grade_instanc")
+}
+
+model student_grade_lock_action {
+  student_grade_lock_action_id        Int           @id @default(autoincrement())
+  student_grade_id                    Int
+  initiating_user_id                  Int
+  student_grade_lock_action_new_value Boolean
+  updated_at                          DateTime
+  created_at                          DateTime
+  student_grade_lock_action_active    Boolean       @default(true)
+  users                               users         @relation(fields: [initiating_user_id], references: [user_id])
+  student_grade                       student_grade @relation(fields: [student_grade_id], references: [student_grade_id])
+}
+
+model student_grade_override {
+  student_grade_override_id        Int           @id @default(autoincrement())
+  student_grade_id                 Int
+  initiating_user_id               Int
+  student_grade_override_new_value Float
+  updated_at                       DateTime
+  created_at                       DateTime
+  student_grade_override_active    Boolean       @default(true)
+  users                            users         @relation(fields: [initiating_user_id], references: [user_id])
+  student_grade                    student_grade @relation(fields: [student_grade_id], references: [student_grade_id])
+}
+
+model student_grade_problem_attachment {
+  student_grade_problem_attachment_id     Int                @id @default(autoincrement())
+  student_grade_id                        Int
+  problem_attachment_id                   Int
+  student_grade_problem_attachment_active Boolean            @default(true)
+  updated_at                              DateTime
+  created_at                              DateTime
+  problem_attachment                      problem_attachment @relation(fields: [problem_attachment_id], references: [problem_attachment_id])
+  student_grade                           student_grade      @relation(fields: [student_grade_id], references: [student_grade_id])
+}
+
+model student_topic_assessment_info {
+  student_topic_assessment_info_id                Int                      @id @default(autoincrement())
+  topic_assessment_info_id                        Int
+  user_id                                         Int
+  student_topic_assessment_info_start_time        DateTime                 @default(now())
+  student_topic_assessment_info_end_time          DateTime                 @default(now())
+  student_topic_assessment_info_next_version_time DateTime                 @default(now())
+  student_topic_assessment_info_active            Boolean                  @default(true)
+  student_topic_assessment_info_num_attempts      Int                      @default(0)
+  student_topic_assessment_info_max_attempts      Int
+  student_topic_assessment_info_is_clean          Boolean                  @default(false)
+  student_topic_assessment_info_is_closed         Boolean                  @default(false)
+  updated_at                                      DateTime
+  created_at                                      DateTime
+  topic_assessment_info                           topic_assessment_info    @relation(fields: [topic_assessment_info_id], references: [topic_assessment_info_id])
+  users                                           users                    @relation(fields: [user_id], references: [user_id])
+  student_grade_instance                          student_grade_instance[]
+}
+
+model student_topic_assessment_override {
+  student_topic_assessment_override_id                            Int                   @id @default(autoincrement())
+  topic_assessment_info_id                                        Int
+  user_id                                                         Int
+  student_topic_assessment_override_duration                      Int?
+  student_topic_assessment_override_max_graded_attempts_per_versi Int?
+  student_topic_assessment_override_max_versions                  Int?
+  student_topic_assessment_override_version_delay                 Int?
+  student_topic_assessment_override_active                        Boolean               @default(true)
+  updated_at                                                      DateTime
+  created_at                                                      DateTime
+  topic_assessment_info                                           topic_assessment_info @relation(fields: [topic_assessment_info_id], references: [topic_assessment_info_id])
+  users                                                           users                 @relation(fields: [user_id], references: [user_id])
+}
+
+model student_topic_override {
+  student_topic_override_id         Int                  @id @default(autoincrement())
+  course_topic_content_id           Int
+  user_id                           Int
+  student_topic_override_start_date DateTime?
+  student_topic_override_end_date   DateTime?
+  student_topic_override_dead_date  DateTime?
+  student_topic_override_active     Boolean              @default(true)
+  updated_at                        DateTime
+  created_at                        DateTime
+  course_topic_content              course_topic_content @relation(fields: [course_topic_content_id], references: [course_topic_content_id])
+  users                             users                @relation(fields: [user_id], references: [user_id])
+}
+
+model student_topic_question_override {
+  student_topic_question_override_id           Int                   @id @default(autoincrement())
+  course_topic_question_id                     Int
+  user_id                                      Int
+  student_topic_question_override_max_attempts Int?
+  student_topic_question_override_active       Boolean               @default(true)
+  updated_at                                   DateTime
+  created_at                                   DateTime
+  course_topic_question                        course_topic_question @relation(fields: [course_topic_question_id], references: [course_topic_question_id])
+  users                                        users                 @relation(fields: [user_id], references: [user_id])
+}
+
+model student_workbook {
+  student_workbook_id                      Int                                   @id @default(autoincrement())
+  student_workbook_active                  Boolean                               @default(true)
+  student_grade_id                         Int
+  user_id                                  Int
+  course_topic_question_id                 Int
+  student_workbook_random_seed             Int
+  student_workbook_submitted               Json
+  student_workbook_result                  Float
+  student_workbook_time                    DateTime
+  created_at                               DateTime
+  updated_at                               DateTime
+  student_workbook_was_late                Boolean                               @default(false)
+  student_workbook_was_expired             Boolean                               @default(false)
+  student_workbook_was_after_attempt_limit Boolean                               @default(false)
+  student_workbook_was_auto_submitted      Boolean                               @default(false)
+  student_workbook_was_locked              Boolean                               @default(false)
+  student_grade_instance_id                Int?
+  course_topic_question                    course_topic_question                 @relation(fields: [course_topic_question_id], references: [course_topic_question_id])
+  student_grade                            student_grade                         @relation(fields: [student_grade_id], references: [student_grade_id])
+  student_grade_instance                   student_grade_instance?               @relation(fields: [student_grade_instance_id], references: [student_grade_instance_id])
+  users                                    users                                 @relation(fields: [user_id], references: [user_id])
+  student_workbook_problem_attachment      student_workbook_problem_attachment[]
+}
+
+model student_workbook_problem_attachment {
+  student_workbook_problem_attachment_id     Int                @id @default(autoincrement())
+  student_workbook_id                        Int
+  problem_attachment_id                      Int
+  student_workbook_problem_attachment_active Boolean            @default(true)
+  updated_at                                 DateTime
+  created_at                                 DateTime
+  problem_attachment                         problem_attachment @relation(fields: [problem_attachment_id], references: [problem_attachment_id])
+  student_workbook                           student_workbook   @relation(fields: [student_workbook_id], references: [student_workbook_id])
+}
+
+model topic_assessment_info {
+  topic_assessment_info_id                              Int                                 @id @default(autoincrement())
+  course_topic_content_id                               Int
+  topic_assessment_info_duration                        Int                                 @default(0)
+  topic_assessment_info_hard_cutoff                     Boolean                             @default(false)
+  topic_assessment_info_max_graded_attempts_per_version Int                                 @default(1)
+  topic_assessment_info_max_versions                    Int                                 @default(0)
+  topic_assessment_info_version_delay                   Int                                 @default(0)
+  topic_assessment_info_hide_hints                      Boolean                             @default(false)
+  topic_assessment_info_show_itemized_results           Boolean                             @default(false)
+  topic_assessment_info_show_total_grade_immediately    Boolean                             @default(false)
+  topic_assessment_info_hide_problems_after_finish      Boolean                             @default(true)
+  topic_assessment_info_randomize_order                 Boolean                             @default(false)
+  topic_assessment_info_active                          Boolean                             @default(true)
+  updated_at                                            DateTime
+  created_at                                            DateTime
+  curriculum_topic_assessment_info_id                   Int?
+  course_topic_content                                  course_topic_content                @relation(fields: [course_topic_content_id], references: [course_topic_content_id])
+  curriculum_topic_assessment_info                      curriculum_topic_assessment_info?   @relation(fields: [curriculum_topic_assessment_info_id], references: [curriculum_topic_assessment_info_id])
+  student_topic_assessment_info                         student_topic_assessment_info[]
+  student_topic_assessment_override                     student_topic_assessment_override[]
+}
+
+model topic_type {
+  topic_type_id        Int                    @id @default(autoincrement())
+  topic_type_active    Boolean                @default(true)
+  topic_type_name      String
+  created_at           DateTime
+  updated_at           DateTime
+  course_topic_content course_topic_content[]
+}
+
+model university {
+  university_id                         Int                                @id @default(autoincrement())
+  university_active                     Boolean                            @default(true)
+  university_name                       String                             @unique
+  university_prof_email_domain          String                             @unique
+  university_student_email_domain       String                             @unique
+  university_verify_institutional_email Boolean                            @default(true)
+  created_at                            DateTime
+  updated_at                            DateTime
+  curriculum                            curriculum[]
+  university_curriculum_permission      university_curriculum_permission[]
+  users                                 users[]
+}
+
+model university_curriculum_permission {
+  university_curriculum_permission_id     Int        @id @default(autoincrement())
+  university_curriculum_permission_active Boolean    @default(true)
+  university_id                           Int
+  curriculum_id                           Int
+  created_at                              DateTime
+  updated_at                              DateTime
+  curriculum                              curriculum @relation(fields: [curriculum_id], references: [curriculum_id])
+  university                              university @relation(fields: [university_id], references: [university_id])
+
+  @@unique([curriculum_id, university_id], name: "university_curriculum_permission--curriculum_id-university_id")
+}
+
+model users {
+  user_id                                                        Int                                 @id @default(autoincrement())
+  course_topic_question_active                                   Boolean                             @default(true)
+  university_id                                                  Int
+  role_id                                                        Int
+  user_first_name                                                String
+  user_last_name                                                 String
+  user_email                                                     String                              @unique
+  user_password                                                  String
+  user_verify_token                                              String?                             @unique
+  user_verified                                                  Boolean                             @default(false)
+  user_actually_verified                                         Boolean                             @default(false)
+  user_preferred_email                                           String                              @default("")
+  user_preferred_email_institution_verification_token            String?
+  user_preferred_email_verification_token                        String?
+  user_verify_token_expires_at                                   DateTime                            @default(now())
+  user_preferred_email_institution_verification_token_expires_at DateTime                            @default(now())
+  user_preferred_email_verification_token_expires_at             DateTime                            @default(now())
+  user_forgot_password_token                                     String?
+  user_forgot_password_token_expires_at                          DateTime                            @default(now())
+  created_at                                                     DateTime
+  updated_at                                                     DateTime
+  user_uuid                                                      String                              @unique
+  permission                                                     permission                          @relation(fields: [role_id], references: [permission_id])
+  university                                                     university                          @relation(fields: [university_id], references: [university_id])
+  course                                                         course[]
+  session                                                        session[]
+  student_enrollment                                             student_enrollment[]
+  student_grade                                                  student_grade[]
+  student_grade_instance                                         student_grade_instance[]
+  student_grade_lock_action                                      student_grade_lock_action[]
+  student_grade_override                                         student_grade_override[]
+  student_topic_assessment_info                                  student_topic_assessment_info[]
+  student_topic_assessment_override                              student_topic_assessment_override[]
+  student_topic_override                                         student_topic_override[]
+  student_topic_question_override                                student_topic_question_override[]
+  student_workbook                                               student_workbook[]
+}
